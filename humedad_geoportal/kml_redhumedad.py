@@ -9,7 +9,7 @@ import humedad as hm
 
 ######################################################################################################FUNCIONES
 
-def write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g0,g1,g2):
+def write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g1,g2):
     blocks=[]
     for code in codes:
         date = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -17,27 +17,7 @@ def write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g0,g1
         url_png='http://siata.gov.co/nicolasl/files/est_humedad.png'
         url_icon = 'http://www.siata.gov.co/iconos/humedad/humedad_naranja.png'
 
-        if df_metadata.loc[code]['tipo_sensor'] == 1:
-            urls_png=[path_figs+'3h/'+str(code)+'_T.png',
-                      path_figs+'24h/'+str(code)+'_T.png',
-                      path_figs+'72h/'+str(code)+'_T.png',
-                      path_figs+'30d/'+str(code)+'_T.png',
-                        path_figs+'3h/'+str(code)+'_EC.png',
-                      path_figs+'24h/'+str(code)+'_EC.png',
-                      path_figs+'72h/'+str(code)+'_EC.png',
-                      path_figs+'30d/'+str(code)+'_EC.png',
-                      path_figs+'3h/'+str(code)+'_VW.png',
-                      path_figs+'24h/'+str(code)+'_VW.png',
-                      path_figs+'72h/'+str(code)+'_VW.png',
-                      path_figs+'30d/'+str(code)+'_VW.png'
-                     ]
-            listlol= [data_bla['nombreestacion'],code,data_bla['ciudad'],url_png,data_bla['latitude'],data_bla['longitude'],
-                  date]+urls_png
-
-            blocks.append( g1.format(listlol[0],listlol[1],listlol[2],listlol[3],listlol[4],listlol[5],listlol[6],listlol[7],listlol[8],
-                     listlol[9],listlol[10],listlol[11],listlol[12],listlol[13],listlol[14],listlol[15],listlol[16],
-                     listlol[17],listlol[18]))
-        elif df_metadata.loc[code]['tipo_sensor'] == 2:
+        if df_metadata.loc[code]['tipo_sensor'] == 2 or df_metadata.loc[code]['tipo_sensor'] == 3:
             urls_png=[path_figs+'3h/'+str(code)+'_T.png',
                       path_figs+'24h/'+str(code)+'_T.png',
                       path_figs+'72h/'+str(code)+'_T.png',
@@ -57,14 +37,15 @@ def write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g0,g1
             blocks.append( g2.format(listlol[0],listlol[1],listlol[2],listlol[3],listlol[4],listlol[5],listlol[6],listlol[7],listlol[8],
                      listlol[9],listlol[10],listlol[11],listlol[12],listlol[13],listlol[14],listlol[15],listlol[16],
                      listlol[17],listlol[18]))
-        else:
+
+        elif df_metadata.loc[code]['tipo_sensor'] == 1:
             urls_png=[path_figs+'3h/'+str(code)+'_H.png',
                       path_figs+'24h/'+str(code)+'_H.png',
                       path_figs+'72h/'+str(code)+'_H.png',
                       path_figs+'30d/'+str(code)+'_H.png']
             listlol= [data_bla['nombreestacion'],code,data_bla['ciudad'],url_png,data_bla['latitude'],data_bla['longitude'],
                   date]+urls_png
-            blocks.append( g0.format(listlol[0],listlol[1],listlol[2],listlol[3],listlol[4],listlol[5],listlol[6],listlol[7],listlol[8],
+            blocks.append( g1.format(listlol[0],listlol[1],listlol[2],listlol[3],listlol[4],listlol[5],listlol[6],listlol[7],listlol[8],
                      listlol[9],listlol[10]))
 
     #armar el kml
@@ -81,6 +62,7 @@ def write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g0,g1
     f.write(kml)
     f.close()
     print ('.kml generated.')
+    return kml
 
 ###################################################################################################ARGUMENTOS
 
@@ -101,6 +83,7 @@ df_metadata = hm.query_mysql(host,user,passw,dbname,query)
 df_metadata = df_metadata.set_index('codigo')
 df_metadata.index = list(map(int,df_metadata.index))
 df_metadata.columns = ['nombreestacion', 'ciudad','latitude', 'longitude', 'estado', 'tipo_sensor', 'red']
+df_metadata.tipo_sensor = list(map(int,df_metadata.tipo_sensor.values))
 
 #ASIGNACIONES
 codigos_pluvio = np.array([20,288,189,25,43,57,295,43,295,389,373,418])
@@ -121,7 +104,7 @@ df_metadata[['p_asociado','depths2drop','depths_laderas']] = pd.DataFrame([codig
                                                           columns=df_metadata.index, 
                                                           index = ['p_asociado','depths2drop','depths_laderas']).T
 
-g0 = '''<Placemark>
+g1 = '''<Placemark>
 <styleUrl>#testIcon197</styleUrl>
 <name>{0}</name>
 <ExtendedData><SchemaData schemaUrl="#Humedad_new">
@@ -148,34 +131,6 @@ g0 = '''<Placemark>
     <Point><coordinates>{5},{4}</coordinates></Point>
 </Placemark>
 '''
-g1 = '''<Placemark>
-<styleUrl>#testIcon197</styleUrl>
-<name>{0}</name>
-<ExtendedData><SchemaData schemaUrl="#Humedad_new">
-    <SimpleData name="Codigo">{1}</SimpleData>
-    <SimpleData name="Municipio">{2}</SimpleData>
-    <SimpleData name="url_imagen">{3}</SimpleData>
-    <SimpleData name="Latitud">{4}</SimpleData>
-    <SimpleData name="Longitud">{5}</SimpleData>
-    <SimpleData name="icon">http://www.siata.gov.co/iconos/humedad/humedad_naranja.png</SimpleData>
-    <SimpleData name="info">Los sensores de humedad del suelo miden el contenido volumétrico de agua en el suelo (CVA), es decir, la proporción [%] entre el volumen de agua y el volumen total de una esfera de suelo (alcance del sensor). Cuantificar la humedad en el suelo permite entender el estado de saturación de las laderas y su respuesta hidrológica ante eventos de precipitación. Referencia del sensor: 5TE, Decagon Devices.</SimpleData>
-    <SimpleData name="G_3_H"></SimpleData>
-    <SimpleData name="G_24_H"></SimpleData>
-    <SimpleData name="G_72_H"></SimpleData>
-    <SimpleData name="G_30_D"></SimpleData>
-    <SimpleData name="G_3_H"></SimpleData>
-    <SimpleData name="G_24_H"></SimpleData>
-    <SimpleData name="G_72_H"></SimpleData>
-    <SimpleData name="G_30_D"></SimpleData>
-    <SimpleData name="G_3_H_ConVolAgua">{7}</SimpleData>
-    <SimpleData name="G_24_H_ConVolAgua">{8}</SimpleData>
-    <SimpleData name="G_72_H_ConVolAgua">{9}</SimpleData>
-    <SimpleData name="G_30_D_ConVolAgua">{10}</SimpleData>
-</SchemaData></ExtendedData>
-    <Point><coordinates>{5},{4}</coordinates></Point>
-</Placemark>
-'''
-
 g2 = '''<Placemark>
 <styleUrl>#testIcon197</styleUrl>
 <name>{0}</name>
@@ -186,23 +141,25 @@ g2 = '''<Placemark>
     <SimpleData name="Latitud">{4}</SimpleData>
     <SimpleData name="Longitud">{5}</SimpleData>
     <SimpleData name="icon">http://www.siata.gov.co/iconos/humedad/humedad_naranja.png</SimpleData>
-    <SimpleData name="info">Los sensores de humedad del suelo miden el contenido volumétrico de agua en el suelo (CVA), es decir, la proporción [%] entre el volumen de agua y el volumen total de una esfera de suelo (alcance del sensor). Cuantificar la humedad en el suelo permite entender el estado de saturación de las laderas y su respuesta hidrológica ante eventos de precipitación. Referencia del sensor: Hydraprobe, Stevens Water.</SimpleData>
-    <SimpleData name="G_3_H"></SimpleData>
-    <SimpleData name="G_24_H"></SimpleData>
-    <SimpleData name="G_72_H"></SimpleData>
-    <SimpleData name="G_30_D"></SimpleData>
-    <SimpleData name="G_3_H"></SimpleData>
-    <SimpleData name="G_24_H"></SimpleData>
-    <SimpleData name="G_72_H"></SimpleData>
-    <SimpleData name="G_30_D"></SimpleData>
-    <SimpleData name="G_3_H_ConVolAgua">{7}</SimpleData>
-    <SimpleData name="G_24_H_ConVolAgua">{8}</SimpleData>
-    <SimpleData name="G_72_H_ConVolAgua">{9}</SimpleData>
-    <SimpleData name="G_30_D_ConVolAgua">{10}</SimpleData>
+    <SimpleData name="info">Los sensores de humedad del suelo miden el contenido volumétrico de agua en el suelo (CAS), es decir, la proporción [%] entre el volumen de agua y el volumen total de una esfera de suelo (alcance del sensor). Cuantificar la humedad en el suelo permite entender el estado de saturación de las laderas y su respuesta hidrológica ante eventos de precipitación. Referencia del sensor: MAS-1, Decagon Devices.</SimpleData>
+    <SimpleData name="fecha_ultima_actualizacion">{6}</SimpleData>
+    <SimpleData name="G_3_H_T">{7}</SimpleData>
+    <SimpleData name="G_24_H_T">{8}</SimpleData>
+    <SimpleData name="G_72_H_T">{9}</SimpleData>
+    <SimpleData name="G_30_D_T">{10}</SimpleData>
+    <SimpleData name="G_3_H_CondElectrica">{11}</SimpleData>
+    <SimpleData name="G_24_H_CondElectrica">{12}</SimpleData>
+    <SimpleData name="G_72_H_CondElectrica">{13}</SimpleData>
+    <SimpleData name="G_30_D_CondElectrica">{14}</SimpleData>
+    <SimpleData name="G_3_H_ConVolAgua">{15}</SimpleData>
+    <SimpleData name="G_24_H_ConVolAgua">{16}</SimpleData>
+    <SimpleData name="G_72_H_ConVolAgua">{17}</SimpleData>
+    <SimpleData name="G_30_D_ConVolAgua">{18}</SimpleData>
 </SchemaData></ExtendedData>
     <Point><coordinates>{5},{4}</coordinates></Point>
 </Placemark>
 '''
+
 blocks = []
 codes = df_metadata.estado[df_metadata.estado == 'A'].index
 print (df_metadata.estado)
@@ -210,8 +167,9 @@ path_figs = 'http://siata.gov.co/nicolasl/figs_operacionales/humedad/'
 path_kml_format = '/media/nicolas/Home/Jupyter/Soraya/git/Alarmas/06_Crones/files/Humedad_kmlformat.kml'
 path_kml = '/media/nicolas/Home/Jupyter/Soraya/git/Alarmas/06_Crones/files/humedaddelsuelo.kml'
 
-######################################################################################################EJECUCION
-write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g0,g1,g2)
+###################################################EJECUCION
+kml = write_kml_humedad(codes,df_metadata,path_figs,path_kml_format,path_kml,g1,g2)
+
 
 res = os.system('rsync -r -v -a -z -e ssh %s hidrologia@192.168.1.74:/var/www/kml/01_Redes'%(path_kml))
 if res == 0:
